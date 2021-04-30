@@ -1,3 +1,10 @@
+THIS IS UPLOADED FOR THE PURPOSE OF DISCUSSION ONLY.
+
+This builds and installs using DKMS, debugging messages show the expected
+control flow but there is no physical output.
+
+-----
+
 History:
 
 The PPS generator facility was added in kernel 2.6.38.
