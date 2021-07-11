@@ -1,10 +1,3 @@
-THIS IS UPLOADED FOR THE PURPOSE OF DISCUSSION ONLY.
-
-This builds and installs using DKMS, debugging messages show the expected
-control flow but there is no physical output.
-
------
-
 History:
 
 The PPS generator facility was added in kernel 2.6.38.
@@ -21,4 +14,13 @@ pps_gen_parport-patched.c also has 1-polarity.patch and 2-iterations.patch
 applied, which in principle should bring the module to a state where is can
 run reliably at least for short periods. It is confirmed to build successfully
 as a module for kernel 4.19.181.
+
+The maximum delay parameter has been increased to 333 mSec, i.e. entered as
+333000000 since it is specified in nSec, and there are extra NEVER_CLEAR and
+TOGGLE defines internally, in combination these can be used to make the physical
+signal more visible during testing.
+
+Recent testing has been minimal, and is in no way sufficient to suggest that
+this facility no longer be considered BROKEN by the kernel maintainers. But it
+does work, at least for relatively short test runs.
 

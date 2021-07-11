@@ -33,6 +33,12 @@
 #include <linux/time.h>
 #include <linux/hrtimer.h>
 #include <linux/parport.h>
+#include <linux/delay.h>
+
+/*
+ * This drives the parallel port strobe signal, which is line 1 on the
+ * standard 25-way female connector. Ground is assumed to be line 25.
+ */
 
 #define DRVDESC "parallel port PPS signal generator"
 
@@ -41,7 +47,7 @@
 
 /* module parameters */
 
-#define SEND_DELAY_MAX		100000
+#define SEND_DELAY_MAX		333000000 /* 333 mSec, enough for a 2:1 m/s ratio */
 
 static unsigned int send_delay = 30000;
 MODULE_PARM_DESC(delay,
@@ -128,9 +134,27 @@ static enum hrtimer_restart hrtimer_event(struct hrtimer *timer)
 			goto error;
 	} while (expire_time.tv_sec == ts2.tv_sec && ts2.tv_nsec < lim);
 
+/*
+ * For the purpose of debugging, optionally specify that the signal is to toggle
+ * rather than pulse and optionally use a static delay rather than a busy loop.
+ * Also if TOGGLE is undefined but NEVER_CLEAR is defined the signal will go and
+ * stay active at startup which is a good albeit crude indication that the right
+ * bit is being ackled and monitored.
+ */
+
+// define TOGGLE
+// define STATIC_DELAY
+// define NEVER_CLEAR
+
 	/* set the signal */
 	port = dev->pardev->port;
+#ifndef TOGGLE
 	port->ops->write_control(port, SIGNAL);
+#else
+	port->ops->write_control(port, port->ops->read_control(port) ? 0 : 1);
+#endif
+
+#ifndef STATIC_DELAY
 	/* busy loop until the time is right for a clear edge */
 	lim = NSEC_PER_SEC - dev->port_write_time;
 	i = 0;
@@ -144,10 +168,20 @@ static enum hrtimer_restart hrtimer_event(struct hrtimer *timer)
 		if (i > MAX_GETTIME_ATTEMPTS)
 			goto error;
 	} while (expire_time.tv_sec == ts2.tv_sec && ts2.tv_nsec < lim);
+#else
+	/* Static delay until approximately the time is right for a clear edge */
+	if ((send_delay / 1000) < 2000)
+		udelay(send_delay / 1000); /* Some number of uSec */
+	else
+		mdelay(send_delay / 1000000); /* Some number of mSec */
+#endif
 
 	/* unset the signal */
+#ifndef TOGGLE
+#ifndef NEVER_CLEAR
 	port->ops->write_control(port, NO_SIGNAL);
-
+#endif
+#endif
 	ktime_get_real_ts64(&ts3);
 
 	local_irq_restore(flags);
@@ -267,6 +301,7 @@ static void parport_detach(struct parport *port)
 	if (port->cad != device.pardev)
 		return;	/* not our port */
 
+	port->ops->write_control(port, NO_SIGNAL);
 	hrtimer_cancel(&device.timer);
 	parport_release(device.pardev);
 	parport_unregister_device(device.pardev);
