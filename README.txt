@@ -24,3 +24,9 @@ Recent testing has been minimal, and is in no way sufficient to suggest that
 this facility no longer be considered BROKEN by the kernel maintainers. But it
 does work, at least for relatively short test runs.
 
+I've also been looking at https://github.com/twteamware/raspberrypi-ptp which
+is closely-related code, and used that to improve my understanding of what's
+happening here. I mention this primarily because it has the major weakness
+that there is no error message if it can't find an appropriate entry in the
+device tree... in the longer term I might try to reconcile the two sources.
+
