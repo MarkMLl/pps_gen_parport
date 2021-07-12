@@ -174,6 +174,7 @@ static enum hrtimer_restart hrtimer_event(struct hrtimer *timer)
 		udelay(send_delay / 1000); /* Some number of uSec */
 	else
 		mdelay(send_delay / 1000000); /* Some number of mSec */
+	ktime_get_real_ts64(&ts2);
 #endif
 
 	/* unset the signal */
